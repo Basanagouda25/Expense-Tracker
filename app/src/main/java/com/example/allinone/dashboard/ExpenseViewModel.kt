@@ -81,4 +81,40 @@ class ExpenseViewModel : ViewModel() {
     fun setBudget(amount: Double) {
         _budget.value = amount
     }
+
+    val monthlyTotals: StateFlow<Map<String, Double>>
+        get() = expenses
+            .map { list ->
+                list.groupBy { expense ->
+                    val month = java.text.SimpleDateFormat(
+                        "MMM yyyy",
+                        java.util.Locale.getDefault()
+                    ).format(java.util.Date(expense.timestamp))
+                    month
+                }.mapValues { entry ->
+                    entry.value.sumOf { it.amount }
+                }
+            }
+            .stateIn(
+                viewModelScope,
+                SharingStarted.WhileSubscribed(5000),
+                emptyMap()
+            )
+
+    val weeklyTotals: StateFlow<Map<String, Double>>
+        get() = expenses.map { list ->
+
+            val sdf = java.text.SimpleDateFormat("dd MMM", java.util.Locale.getDefault())
+
+            list.groupBy { expense ->
+                sdf.format(java.util.Date(expense.timestamp))
+            }.mapValues { entry ->
+                entry.value.sumOf { it.amount }
+            }
+
+        }.stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5000),
+            emptyMap()
+        )
 }

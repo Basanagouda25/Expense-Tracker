@@ -1,26 +1,27 @@
 package com.example.allinone.dashboard
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.Button
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 
 @Composable
-fun AnalyticsScreen(
-    viewModel: ExpenseViewModel = viewModel()
-) {
+fun AnalyticsScreen() {
 
-    val categoryData by viewModel.categoryTotals.collectAsState()
-    val total = categoryData.values.sum()
+    val viewModel: ExpenseViewModel = viewModel()
+
+    val monthlyTotals by viewModel.monthlyTotals.collectAsState()
+    val weeklyTotals by viewModel.weeklyTotals.collectAsState()
+    val categoryTotals by viewModel.categoryTotals.collectAsState()
+
+    var selectedType by remember { mutableStateOf(AnalyticsType.MONTH) }
+
+    LaunchedEffect(Unit) {
+        viewModel.loadExpenses()
+    }
 
     Column(
         modifier = Modifier
@@ -28,22 +29,40 @@ fun AnalyticsScreen(
             .padding(16.dp)
     ) {
 
-        Text("Analytics", fontSize = 24.sp)
+        // Toggle Buttons
+        Row {
+            Button(
+                onClick = { selectedType = AnalyticsType.MONTH }
+            ) {
+                Text("Month")
+            }
 
-        Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.width(10.dp))
 
-        Text("Total Spent: ₹ $total", fontSize = 20.sp)
+            Button(
+                onClick = { selectedType = AnalyticsType.WEEK }
+            ) {
+                Text("Week")
+            }
+        }
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        categoryData.forEach { (category, amount) ->
+        // Graph on top
+        if (selectedType == AnalyticsType.MONTH) {
+            MonthlyLineChart(monthlyTotals)
+        } else {
+            MonthlyLineChart(weeklyTotals)
+        }
 
-            val percentage =
-                if (total != 0.0) (amount / total) * 100 else 0.0
+        Spacer(modifier = Modifier.height(30.dp))
 
-            Text("$category : ₹ $amount (${percentage.toInt()}%)")
+        Text("Category Breakdown")
 
-            Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(10.dp))
+
+        categoryTotals.forEach { (category, total) ->
+            Text("$category : ₹$total")
         }
     }
 }

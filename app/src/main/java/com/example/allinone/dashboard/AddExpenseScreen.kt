@@ -21,7 +21,6 @@ fun AddExpenseScreen(
     navController: NavController
 ) {
 
-    // ✅ Single ViewModel instance for this screen
     val viewModel: ExpenseViewModel = viewModel()
 
     var amount by remember { mutableStateOf("") }
@@ -30,7 +29,6 @@ fun AddExpenseScreen(
 
     val message by viewModel.message.collectAsState()
 
-    // ✅ Navigate when success happens
     LaunchedEffect(message) {
         if (message == "SUCCESS") {
             navController.popBackStack()

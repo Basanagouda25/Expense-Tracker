@@ -9,6 +9,7 @@ import com.example.allinone.auth.LoginScreen
 import com.example.allinone.navigation.Screen
 import com.example.allinone.auth.Register
 import com.example.allinone.dashboard.AddExpenseScreen
+import com.example.allinone.dashboard.DashboardScreen
 import com.example.allinone.dashboard.ExpenseViewModel
 import com.example.allinone.dashboard.HomeScreen
 
@@ -31,11 +32,8 @@ fun AppNavigation(){
         {
             Register(navController)
         }
-        composable(Screen.Home.route) { backStackEntry ->
-
-            val viewModel: ExpenseViewModel = viewModel(backStackEntry)
-
-            HomeScreen(navController, viewModel)
+        composable(Screen.Home.route) {
+            DashboardScreen(navController)
         }
         composable(Screen.AddExpense.route) { backStackEntry ->
 

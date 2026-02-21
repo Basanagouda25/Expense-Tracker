@@ -2,6 +2,7 @@ package com.example.allinone.dashboard
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -23,6 +24,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.allinone.data.model.Expense
 import com.example.allinone.navigation.Screen
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import com.google.firebase.auth.FirebaseAuth
 
 @Composable
@@ -84,45 +87,48 @@ fun HomeScreen(
         ) {
             Text("Add Expense")
         }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Button(
-            onClick = {
-                FirebaseAuth.getInstance().signOut()
-                navController.navigate(Screen.Login.route) {
-                    popUpTo(Screen.Home.route) { inclusive = true }
-                }
-            },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Logout")
-        }
     }
 }
+
 
 @Composable
 fun ExpenseItem(expense: Expense) {
 
-    Column(
+    Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp)
+            .padding(vertical = 6.dp),
+        elevation = CardDefaults.cardElevation(4.dp)
     ) {
 
-        Text(
-            text = expense.category,
-            fontSize = 16.sp
-        )
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp)
+        ) {
 
-        Text(
-            text = expense.note,
-            fontSize = 12.sp
-        )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
 
-        Text(
-            text = "₹ ${expense.amount}",
-            fontSize = 16.sp
-        )
+                Text(
+                    text = expense.category,
+                    fontSize = 16.sp
+                )
+
+                Text(
+                    text = "₹ ${expense.amount}",
+                    fontSize = 16.sp
+                )
+            }
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Text(
+                text = expense.note,
+                fontSize = 13.sp
+            )
+        }
     }
 }
