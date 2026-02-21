@@ -1,13 +1,16 @@
 package com.example.allinone.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.allinone.auth.LoginScreen
 import com.example.allinone.navigation.Screen
 import com.example.allinone.auth.Register
-import com.example.allinone.auth.login
-import com.example.allinone.dashboard.home
+import com.example.allinone.dashboard.AddExpenseScreen
+import com.example.allinone.dashboard.ExpenseViewModel
+import com.example.allinone.dashboard.HomeScreen
 
 @Composable
 fun AppNavigation(){
@@ -22,14 +25,21 @@ fun AppNavigation(){
     ) {
         composable(Screen.Login.route)
         {
-            login(navController)
+            LoginScreen(navController)
         }
         composable(Screen.Register.route)
         {
             Register(navController)
         }
-        composable("home"){
-            home()
+        composable(Screen.Home.route) { backStackEntry ->
+
+            val viewModel: ExpenseViewModel = viewModel(backStackEntry)
+
+            HomeScreen(navController, viewModel)
+        }
+        composable(Screen.AddExpense.route) { backStackEntry ->
+
+            AddExpenseScreen(navController)
         }
     }
 }

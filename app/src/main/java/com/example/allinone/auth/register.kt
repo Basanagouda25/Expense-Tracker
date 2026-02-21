@@ -45,7 +45,9 @@ fun Register(
 
     LaunchedEffect(isRegistered) {
         if(isRegistered){
-            navController.navigate(Screen.Login.route)
+            navController.navigate(Screen.Login.route){
+                popUpTo(Screen.Register.route){inclusive = true}
+            }
         }
     }
 
@@ -103,6 +105,8 @@ fun Register(
         ) {
             Text("Register")
         }
+        Spacer(modifier = Modifier.height(20.dp))
+        Text(text = message)
         Spacer(modifier = Modifier.height(20.dp))
         TextButton(
             onClick = {

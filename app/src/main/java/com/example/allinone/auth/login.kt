@@ -30,7 +30,7 @@ import com.example.allinone.navigation.Screen
 import com.google.firebase.auth.FirebaseAuth
 
 @Composable
-fun login(
+fun LoginScreen(
     navController: NavController
 ){
     val viewModel : AuthViewModel = viewModel()
@@ -38,12 +38,14 @@ fun login(
     // mutableStateOf is used to observe the compose if it is changed the values in ui automatically changes
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-
+    val message by viewModel.message.collectAsState()
     val isLoggedIn by viewModel.isLoggedIn.collectAsState()
 
     LaunchedEffect(isLoggedIn) {
         if(isLoggedIn){
-            navController.navigate(Screen.Home.route)
+            navController.navigate(Screen.Home.route){
+                popUpTo(Screen.Login.route){inclusive = true}
+            }
         }
     }
 
@@ -89,6 +91,8 @@ fun login(
         ) {
             Text("Login")
         }
+        Spacer(modifier = Modifier.height(20.dp))
+        Text(text = message)
         Spacer(modifier = Modifier.height(20.dp))
         TextButton(
             onClick = {

@@ -11,6 +11,6 @@ interface ExpenseDao {
     @Insert
     suspend fun insertExpense(expense: Expense)
 
-    @Query("Select * from expenses ORDER BY date DESC")
+    @Query("Select * from expenses ORDER BY timestamp DESC")
     fun getAllExpenses() : Flow<List<Expense>>
 }
