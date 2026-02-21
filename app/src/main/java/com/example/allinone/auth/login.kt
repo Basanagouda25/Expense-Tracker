@@ -1,4 +1,4 @@
-package com.example.allinone
+package com.example.allinone.auth
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -10,24 +10,44 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
+import com.example.allinone.navigation.Screen
+import com.google.firebase.auth.FirebaseAuth
 
 @Composable
-fun Register(){
-    var name by remember { mutableStateOf("") }
-    var phoneNumber by remember { mutableStateOf("") }
+fun login(
+    navController: NavController
+){
+    val viewModel : AuthViewModel = viewModel()
+    // remember is used because compose will remember this value after every recomposition
+    // mutableStateOf is used to observe the compose if it is changed the values in ui automatically changes
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var message by remember { mutableStateOf("") }
 
+    val isLoggedIn by viewModel.isLoggedIn.collectAsState()
+
+    LaunchedEffect(isLoggedIn) {
+        if(isLoggedIn){
+            navController.navigate(Screen.Home.route)
+        }
+    }
+
+    // now the ui for jetpack compose
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -37,31 +57,17 @@ fun Register(){
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            "Register Screen",
-            fontSize = 20.sp
+            "Login Screen",
+            fontSize = 28.sp,
+            fontFamily = FontFamily.SansSerif
         )
         Spacer(modifier = Modifier.height(20.dp))
 
-        OutlinedTextField(
-            value = name,
-            onValueChange = {name = it},
-            label = {Text("Enter your name")},
-            modifier = Modifier.fillMaxWidth()
-        )
-        Spacer(modifier = Modifier.height(20.dp))
-
-        OutlinedTextField(
-            value = phoneNumber,
-            onValueChange = {phoneNumber = it},
-            label = {Text("Enter your Number")},
-            modifier = Modifier.fillMaxWidth()
-        )
-        Spacer(modifier = Modifier.height(20.dp))
-
+        //input email feild
         OutlinedTextField(
             value = email,
             onValueChange = {email = it},
-            label = {Text("Enter your email")},
+            label = {Text("Enter Email")}, //  this is like a placeholder
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(modifier = Modifier.height(20.dp))
@@ -69,34 +75,33 @@ fun Register(){
         OutlinedTextField(
             value = password,
             onValueChange = {password = it},
-            label = {Text("Enter your password")},
+            label = {Text("Enter password")},
+            visualTransformation = PasswordVisualTransformation(),
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(modifier = Modifier.height(20.dp))
 
         Button(
-            onClick = {
-                if(name.isEmpty() || phoneNumber.isEmpty() || email.isEmpty() || password.isEmpty())
-                {
-                    message = "Fill all the details"
-                }
-                else if (phoneNumber.length != 10){
-                    message = "Phone number should be 10 digits"
-                }
-                else if(password.length < 6){
-                    message = "Password should be 6 characters"
-                }
-                else{
-                    message = "Registration Successful"
-                }
-            }
+            onClick ={
+                viewModel.login(email,password)
+            },
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Register")
+            Text("Login")
         }
         Spacer(modifier = Modifier.height(20.dp))
-        Text(
-            text = message,
-            fontSize = 20.sp
-        )
+        TextButton(
+            onClick = {
+                navController.navigate(Screen.Register.route)
+            }
+        ) {
+            Text("Don't have account? register")
+        }
     }
 }
+/*
+@Preview
+@Composable
+fun loginPreview(){
+    login()
+}*/

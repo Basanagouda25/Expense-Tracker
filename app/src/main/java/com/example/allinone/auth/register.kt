@@ -1,6 +1,5 @@
-package com.example.allinone
+package com.example.allinone.auth
 
-import android.widget.Space
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -11,30 +10,45 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.modifier.modifierLocalOf
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
+import com.example.allinone.navigation.Screen
+import com.google.firebase.auth.FirebaseAuth
+
 
 @Composable
-fun login(){
-    // remember is used because compose will remember this value after every recomposition
-    // mutableStateOf is used to observe the compose if it is changed the values in ui automatically changes
+fun Register(
+    navController: NavController
+){
+    val viewModel : AuthViewModel = viewModel()
+
+    var name by remember { mutableStateOf("") }
+    var phoneNumber by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-
     var message by remember { mutableStateOf("") }
 
-    // now the ui for jetpack compose
+    val isRegistered by viewModel.isRegistered.collectAsState()
+
+    LaunchedEffect(isRegistered) {
+        if(isRegistered){
+            navController.navigate(Screen.Login.route)
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -44,17 +58,31 @@ fun login(){
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            "Login Screen",
-            fontSize = 28.sp,
-            fontFamily = FontFamily.SansSerif
+            "Register Screen",
+            fontSize = 20.sp
         )
         Spacer(modifier = Modifier.height(20.dp))
 
-        //input email feild
+        OutlinedTextField(
+            value = name,
+            onValueChange = {name = it},
+            label = {Text("Enter your name")},
+            modifier = Modifier.fillMaxWidth()
+        )
+        Spacer(modifier = Modifier.height(20.dp))
+
+        OutlinedTextField(
+            value = phoneNumber,
+            onValueChange = {phoneNumber = it},
+            label = {Text("Enter your Number")},
+            modifier = Modifier.fillMaxWidth()
+        )
+        Spacer(modifier = Modifier.height(20.dp))
+
         OutlinedTextField(
             value = email,
             onValueChange = {email = it},
-            label = {Text("Enter Email")}, //  this is like a placeholder
+            label = {Text("Enter your email")},
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(modifier = Modifier.height(20.dp))
@@ -62,34 +90,26 @@ fun login(){
         OutlinedTextField(
             value = password,
             onValueChange = {password = it},
-            label = {Text("Enter password")},
+            label = {Text("Enter your password")},
             visualTransformation = PasswordVisualTransformation(),
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(modifier = Modifier.height(20.dp))
 
         Button(
-            onClick ={
-                if(email == "user@gmail.com" && password == "user@123"){
-                    message = "Login Sucessful"
-                }else{
-                    message = "Login Failed"
-                }
-            },
-            modifier = Modifier.fillMaxWidth()
+            onClick = {
+                viewModel.register(name,phoneNumber,email,password)
+            }
         ) {
-            Text("Login")
+            Text("Register")
         }
         Spacer(modifier = Modifier.height(20.dp))
-        Text(
-            text = message,
-            fontSize = 18.sp
-        )
+        TextButton(
+            onClick = {
+                navController.navigate(Screen.Login.route)
+            }
+        ) {
+            Text("Already have account? Login")
+        }
     }
-}
-
-@Preview
-@Composable
-fun loginPreview(){
-    login()
 }
