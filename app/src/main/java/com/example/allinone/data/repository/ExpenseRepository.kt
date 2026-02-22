@@ -53,4 +53,33 @@ class ExpenseRepository {
         // when flow is stopped listener is removed so that memory should not leak
         awaitClose{listener.remove()}
     }
+    suspend fun deleteExpense(expenseId: String): Result<String> {
+        return try {
+            val uid = auth.currentUser?.uid ?: return Result.failure(Exception("User Not logged in"))
+
+            firestore
+                .collection("users")
+                .document(uid)
+                .collection("expenses")
+                .document(expenseId) // Target the specific expense ID
+                .delete()
+                .await() // Wait for deletion to complete
+
+            Result.success("Expense Deleted")
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun updateExpense(expense: Expense): Result<String> {
+        return try {
+            val uid = auth.currentUser?.uid ?: return Result.failure(Exception("User Not logged in"))
+            firestore.collection("users").document(uid)
+                .collection("expenses").document(expense.id) // Point to the existing ID
+                .set(expense).await() // Overwrites with new data
+            Result.success("Expense Updated")
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }
