@@ -1,5 +1,7 @@
 package com.example.allinone.dashboard
 
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.LocalActivity // <-- Modern LocalActivity import
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -27,24 +29,31 @@ import java.util.Locale
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddExpenseScreen(navController: NavController) {
-    val viewModel: ExpenseViewModel = viewModel()
+    // 1. THE SHARED BRAIN: Safely grab the Activity ViewModel
+    val activity = LocalActivity.current as ComponentActivity
+    val viewModel: ExpenseViewModel = viewModel(activity)
 
-    // Check if we are editing or adding
     val expenseToEdit by viewModel.expenseToEdit.collectAsState()
     val isEditing = expenseToEdit != null
 
-    // Pre-fill states if editing
-    var amount by remember { mutableStateOf(expenseToEdit?.amount?.toString()?.removeSuffix(".0") ?: "") }
-    var category by remember { mutableStateOf(expenseToEdit?.category ?: "") }
-    var note by remember { mutableStateOf(expenseToEdit?.note ?: "") }
-    var transactionType by remember { mutableStateOf(expenseToEdit?.type ?: "Expense") }
-
-    // FIX: Safely extract the time in milliseconds from the Date object, fallback to current time
-    var selectedDateMillis by remember {
-        mutableStateOf(expenseToEdit?.timestamp?.time ?: System.currentTimeMillis())
-    }
-
+    // 2. Simple, empty states initially
+    var amount by remember { mutableStateOf("") }
+    var category by remember { mutableStateOf("") }
+    var note by remember { mutableStateOf("") }
+    var transactionType by remember { mutableStateOf("Expense") }
+    var selectedDateMillis by remember { mutableStateOf(System.currentTimeMillis()) }
     var showDatePicker by remember { mutableStateOf(false) }
+
+    // 3. BULLETPROOF PRE-FILL: The exact moment `expenseToEdit` is found, fill the boxes!
+    LaunchedEffect(expenseToEdit) {
+        expenseToEdit?.let {
+            amount = it.amount.toString().removeSuffix(".0")
+            category = it.category
+            note = it.note
+            transactionType = it.type
+            selectedDateMillis = it.timestamp?.time ?: System.currentTimeMillis()
+        }
+    }
 
     val message by viewModel.message.collectAsState()
     val themePrimary = MaterialTheme.colorScheme.primary
@@ -58,7 +67,6 @@ fun AddExpenseScreen(navController: NavController) {
         }
     }
 
-    // Date Formatter for display
     val dateString = remember(selectedDateMillis) {
         SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(Date(selectedDateMillis))
     }
@@ -86,7 +94,6 @@ fun AddExpenseScreen(navController: NavController) {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(modifier = Modifier.height(24.dp))
-        // Top Bar Area
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = {
                 viewModel.setExpenseToEdit(null) // Clear if user backs out
@@ -102,7 +109,6 @@ fun AddExpenseScreen(navController: NavController) {
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Toggle Switch
         Row(modifier = Modifier.fillMaxWidth().height(50.dp).background(themeSurface, RoundedCornerShape(25.dp)).padding(4.dp)) {
             ToggleButton("Expense", transactionType == "Expense", themePrimary, Modifier.weight(1f)) { transactionType = "Expense" }
             ToggleButton("Income", transactionType == "Income", themePrimary, Modifier.weight(1f)) { transactionType = "Income" }
@@ -110,10 +116,8 @@ fun AddExpenseScreen(navController: NavController) {
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        // Form Card
         Column(modifier = Modifier.fillMaxWidth().background(themeSurface, RoundedCornerShape(24.dp)).padding(24.dp)) {
 
-            // Amount
             OutlinedTextField(
                 value = amount, onValueChange = { amount = it }, label = { Text("Amount (₹)") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -122,7 +126,6 @@ fun AddExpenseScreen(navController: NavController) {
             )
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Category
             OutlinedTextField(
                 value = category, onValueChange = { category = it }, label = { Text("Category") },
                 modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp),
@@ -130,7 +133,6 @@ fun AddExpenseScreen(navController: NavController) {
             )
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Note
             OutlinedTextField(
                 value = note, onValueChange = { note = it }, label = { Text("Note (Optional)") },
                 modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp),
@@ -138,12 +140,11 @@ fun AddExpenseScreen(navController: NavController) {
             )
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Date Picker Field
             OutlinedTextField(
                 value = dateString, onValueChange = { }, readOnly = true, enabled = false,
                 label = { Text("Date") },
                 trailingIcon = { Icon(Icons.Default.DateRange, contentDescription = "Pick Date", tint = themePrimary) },
-                modifier = Modifier.fillMaxWidth().clickable { showDatePicker = true }, // Click opens picker
+                modifier = Modifier.fillMaxWidth().clickable { showDatePicker = true },
                 shape = RoundedCornerShape(16.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     disabledTextColor = Color.White, disabledBorderColor = Color.Gray.copy(alpha = 0.5f), disabledLabelColor = Color.Gray, disabledTrailingIconColor = themePrimary
@@ -157,9 +158,7 @@ fun AddExpenseScreen(navController: NavController) {
             onClick = {
                 val amountDouble = amount.toDoubleOrNull()
                 if (amountDouble != null && category.isNotBlank()) {
-                    // FIX: Convert the Long (milliseconds) back into a Date object
                     val dateToSave = Date(selectedDateMillis)
-
                     if (isEditing) {
                         viewModel.updateExpense(expenseToEdit!!.id, amountDouble, category, note, transactionType, dateToSave)
                     } else {

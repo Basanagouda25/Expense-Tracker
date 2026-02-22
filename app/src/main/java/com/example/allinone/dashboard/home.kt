@@ -28,12 +28,14 @@ import com.example.allinone.data.model.Expense
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.LocalActivity
 
 @OptIn(ExperimentalMaterial3Api::class) // Required for SwipeToDismissBox
 @Composable
 fun HomeScreen(
     navController: NavController,
-    expenseViewModel: ExpenseViewModel = viewModel()
+    expenseViewModel: ExpenseViewModel = viewModel(LocalActivity.current as ComponentActivity)
 ) {
     val expenses by expenseViewModel.expenses.collectAsState()
     val themeSurface = MaterialTheme.colorScheme.surface
@@ -100,8 +102,8 @@ fun HomeScreen(
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             items(
-                items = expenses,
-                key = { it.id } // Important for accurate swipe-to-delete animations
+                items = expenses.sortedByDescending { it.timestamp?.time ?: 0L },
+                key = { it.id }
             ) { expense ->
 
                 // --- Swipe to Delete Logic ---
