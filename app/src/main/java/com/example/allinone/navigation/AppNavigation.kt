@@ -12,17 +12,22 @@ import com.example.allinone.dashboard.AddExpenseScreen
 import com.example.allinone.dashboard.DashboardScreen
 import com.example.allinone.dashboard.ExpenseViewModel
 import com.example.allinone.dashboard.HomeScreen
+import com.google.firebase.auth.FirebaseAuth
 
 @Composable
 fun AppNavigation(){
     //navigation controller
     val navController = rememberNavController()
-
+    val auth = FirebaseAuth.getInstance()
+    val startDestination = if (auth.currentUser != null) {
+        Screen.Home.route
+    } else {
+        Screen.Login.route
+    }
     //nav host
     NavHost(
         navController = navController,
-        //app starts from login page
-        startDestination = Screen.Login.route
+        startDestination = startDestination
     ) {
         composable(Screen.Login.route)
         {
