@@ -4,6 +4,7 @@ import android.app.Application
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.allinone.api.RetrofitInstance // 🔥 Use the centralized Retrofit instance
 import com.example.allinone.data.model.Expense
 import com.example.allinone.data.repository.BudgetDataStore
 import com.example.allinone.data.repository.ExpenseRepository
@@ -12,7 +13,6 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-
 
 class ExpenseViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -26,7 +26,7 @@ class ExpenseViewModel(application: Application) : AndroidViewModel(application)
         _message.value = ""
     }
 
-    // ---------------- Add Expense ----------------
+    // ---------------- ADD EXPENSE (Standard) ----------------
     fun addExpense(
         amount: Double,
         category: String,
@@ -52,6 +52,62 @@ class ExpenseViewModel(application: Application) : AndroidViewModel(application)
 
             result.onFailure {
                 _message.value = it.message ?: "Error in adding"
+            }
+        }
+    }
+
+    // ---------------- 🔥 AI POWERED ADD EXPENSE ----------------
+    fun addExpenseWithAI(
+        amount: Double,
+        note: String,
+        type: String,
+        timestamp: Date? = null
+    ) {
+        viewModelScope.launch {
+            try {
+                // 1. Call AI API to predict category based on note
+                Log.d("API_DEBUG", "Sending note to AI: $note")
+                val response = RetrofitInstance.api.predictCategory(note)
+                val predictedCategory = response.category
+                Log.d("API_DEBUG", "AI Prediction Received: $predictedCategory")
+
+                val expense = Expense(
+                    amount = amount,
+                    category = predictedCategory, // Automatic AI category!
+                    note = note,
+                    type = type,
+                    timestamp = timestamp
+                )
+
+                val result = repository.addExpense(expense)
+
+                result.onSuccess {
+                    Log.d("ExpenseDebug", "AI Transaction Added Success")
+                    _message.value = "SUCCESS"
+                }
+
+                result.onFailure {
+                    _message.value = it.message ?: "Error in adding to database"
+                }
+
+            } catch (e: Exception) {
+                // 2. ERROR HANDLING: If AI fails (URL wrong, server down, etc.)
+                Log.e("API_ERROR", "AI Prediction Failed: ${e.message}")
+                
+                // Show real error to user (optional, can be changed back to offline msg)
+                _message.value = "AI Offline: ${e.message ?: "Check URL"}"
+
+                // 3. FALLBACK: Save with "Others" category if AI is unavailable
+                val expense = Expense(
+                    amount = amount,
+                    category = "Others", 
+                    note = note,
+                    type = type,
+                    timestamp = timestamp
+                )
+
+                repository.addExpense(expense)
+                // Note: We don't set _message to SUCCESS yet, so the screen might show the error message.
             }
         }
     }
@@ -84,8 +140,7 @@ class ExpenseViewModel(application: Application) : AndroidViewModel(application)
                 emptyMap()
             )
 
-    // ---------------- Budget (DataStore Version) ----------------
-    // We removed the old _budget MutableStateFlow and replaced it with this!
+    // ---------------- Budget ----------------
     val budget: StateFlow<Double> = budgetStore.budgetFlow
         .stateIn(
             viewModelScope,
@@ -95,11 +150,11 @@ class ExpenseViewModel(application: Application) : AndroidViewModel(application)
 
     fun setBudget(amount: Double) {
         viewModelScope.launch {
-            budgetStore.saveBudget(amount) // Saves permanently to the device
+            budgetStore.saveBudget(amount)
         }
     }
 
-    // ---------------- Timeline Analytics ----------------
+    // ---------------- Timeline ----------------
     val monthlyTotals: StateFlow<Map<String, Double>>
         get() = expenses
             .map { list ->
@@ -134,14 +189,14 @@ class ExpenseViewModel(application: Application) : AndroidViewModel(application)
             emptyMap()
         )
 
-    // ---------------- Delete Expense ----------------
+    // ---------------- Delete ----------------
     fun deleteExpense(expenseId: String) {
         viewModelScope.launch {
             repository.deleteExpense(expenseId)
         }
     }
 
-    // ---------------- Edit State ----------------
+    // ---------------- Edit ----------------
     private val _expenseToEdit = MutableStateFlow<Expense?>(null)
     val expenseToEdit: StateFlow<Expense?> = _expenseToEdit
 
@@ -149,7 +204,6 @@ class ExpenseViewModel(application: Application) : AndroidViewModel(application)
         _expenseToEdit.value = expense
     }
 
-    // ---------------- Update Function ----------------
     fun updateExpense(
         id: String,
         amount: Double,
@@ -165,7 +219,9 @@ class ExpenseViewModel(application: Application) : AndroidViewModel(application)
                 _message.value = "SUCCESS"
                 _expenseToEdit.value = null
             }
-            result.onFailure { _message.value = it.message ?: "Error updating" }
+            result.onFailure {
+                _message.value = it.message ?: "Error updating"
+            }
         }
     }
 }

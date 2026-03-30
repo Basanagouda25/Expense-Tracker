@@ -1,7 +1,7 @@
 package com.example.allinone.dashboard
 
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.LocalActivity // <-- Modern LocalActivity import
+import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -23,165 +23,235 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddExpenseScreen(navController: NavController) {
-    // 1. THE SHARED BRAIN: Safely grab the Activity ViewModel
+
     val activity = LocalActivity.current as ComponentActivity
     val viewModel: ExpenseViewModel = viewModel(activity)
 
     val expenseToEdit by viewModel.expenseToEdit.collectAsState()
     val isEditing = expenseToEdit != null
 
-    // 2. Simple, empty states initially
     var amount by remember { mutableStateOf("") }
-    var category by remember { mutableStateOf("") }
     var note by remember { mutableStateOf("") }
     var transactionType by remember { mutableStateOf("Expense") }
     var selectedDateMillis by remember { mutableStateOf(System.currentTimeMillis()) }
     var showDatePicker by remember { mutableStateOf(false) }
 
-    // 3. BULLETPROOF PRE-FILL: The exact moment `expenseToEdit` is found, fill the boxes!
+    val message by viewModel.message.collectAsState()
+
     LaunchedEffect(expenseToEdit) {
         expenseToEdit?.let {
             amount = it.amount.toString().removeSuffix(".0")
-            category = it.category
             note = it.note
             transactionType = it.type
             selectedDateMillis = it.timestamp?.time ?: System.currentTimeMillis()
         }
     }
 
-    val message by viewModel.message.collectAsState()
-    val themePrimary = MaterialTheme.colorScheme.primary
-    val themeSurface = MaterialTheme.colorScheme.surface
-
     LaunchedEffect(message) {
         if (message == "SUCCESS") {
             viewModel.clearMessage()
-            viewModel.setExpenseToEdit(null) // Reset on success
+            viewModel.setExpenseToEdit(null)
             navController.popBackStack()
         }
     }
 
+    val themePrimary = MaterialTheme.colorScheme.primary
+    val themeSurface = MaterialTheme.colorScheme.surface
+
     val dateString = remember(selectedDateMillis) {
-        SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(Date(selectedDateMillis))
+        SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
+            .format(Date(selectedDateMillis))
     }
 
+    // ---------------- DATE PICKER ----------------
     if (showDatePicker) {
-        val datePickerState = rememberDatePickerState(initialSelectedDateMillis = selectedDateMillis)
+        val datePickerState = rememberDatePickerState(selectedDateMillis)
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
             confirmButton = {
                 TextButton(onClick = {
-                    datePickerState.selectedDateMillis?.let { selectedDateMillis = it }
+                    datePickerState.selectedDateMillis?.let {
+                        selectedDateMillis = it
+                    }
                     showDatePicker = false
-                }) { Text("OK", color = themePrimary) }
+                }) {
+                    Text("OK")
+                }
             },
             dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) { Text("Cancel", color = themePrimary) }
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text("Cancel")
+                }
             }
         ) {
             DatePicker(state = datePickerState)
         }
     }
 
+    // ---------------- UI ----------------
     Column(
-        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(20.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .padding(20.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+
         Spacer(modifier = Modifier.height(24.dp))
-        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             IconButton(onClick = {
-                viewModel.setExpenseToEdit(null) // Clear if user backs out
+                viewModel.setExpenseToEdit(null)
                 navController.popBackStack()
             }) {
                 Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
             }
+
             Text(
                 text = if (isEditing) "Edit Transaction" else "Add Transaction",
-                fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.White, modifier = Modifier.padding(start = 8.dp)
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
             )
         }
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        Row(modifier = Modifier.fillMaxWidth().height(50.dp).background(themeSurface, RoundedCornerShape(25.dp)).padding(4.dp)) {
-            ToggleButton("Expense", transactionType == "Expense", themePrimary, Modifier.weight(1f)) { transactionType = "Expense" }
-            ToggleButton("Income", transactionType == "Income", themePrimary, Modifier.weight(1f)) { transactionType = "Income" }
+        // ---------------- TYPE SWITCH ----------------
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(50.dp)
+                .background(themeSurface, RoundedCornerShape(25.dp))
+                .padding(4.dp)
+        ) {
+            ToggleButton("Expense", transactionType == "Expense", themePrimary, Modifier.weight(1f)) {
+                transactionType = "Expense"
+            }
+            ToggleButton("Income", transactionType == "Income", themePrimary, Modifier.weight(1f)) {
+                transactionType = "Income"
+            }
         }
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        Column(modifier = Modifier.fillMaxWidth().background(themeSurface, RoundedCornerShape(24.dp)).padding(24.dp)) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(themeSurface, RoundedCornerShape(24.dp))
+                .padding(24.dp)
+        ) {
 
+            // Amount
             OutlinedTextField(
-                value = amount, onValueChange = { amount = it }, label = { Text("Amount (₹)") },
+                value = amount,
+                onValueChange = { amount = it },
+                label = { Text("Amount (₹)") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp),
-                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = themePrimary, focusedTextColor = Color.White, unfocusedTextColor = Color.White)
+                modifier = Modifier.fillMaxWidth()
             )
+
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Note (AI will use this)
             OutlinedTextField(
-                value = category, onValueChange = { category = it }, label = { Text("Category") },
-                modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp),
-                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = themePrimary, focusedTextColor = Color.White, unfocusedTextColor = Color.White)
+                value = note,
+                onValueChange = { note = it },
+                label = { Text("Note (e.g. Uber ride, Pizza)") },
+                modifier = Modifier.fillMaxWidth()
             )
+
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Date
             OutlinedTextField(
-                value = note, onValueChange = { note = it }, label = { Text("Note (Optional)") },
-                modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp),
-                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = themePrimary, focusedTextColor = Color.White, unfocusedTextColor = Color.White)
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-
-            OutlinedTextField(
-                value = dateString, onValueChange = { }, readOnly = true, enabled = false,
+                value = dateString,
+                onValueChange = {},
+                readOnly = true,
                 label = { Text("Date") },
-                trailingIcon = { Icon(Icons.Default.DateRange, contentDescription = "Pick Date", tint = themePrimary) },
-                modifier = Modifier.fillMaxWidth().clickable { showDatePicker = true },
-                shape = RoundedCornerShape(16.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    disabledTextColor = Color.White, disabledBorderColor = Color.Gray.copy(alpha = 0.5f), disabledLabelColor = Color.Gray, disabledTrailingIconColor = themePrimary
-                )
+                trailingIcon = {
+                    Icon(Icons.Default.DateRange, contentDescription = null)
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { showDatePicker = true }
             )
         }
 
         Spacer(modifier = Modifier.height(32.dp))
 
+        // ---------------- SAVE BUTTON ----------------
         Button(
             onClick = {
                 val amountDouble = amount.toDoubleOrNull()
-                if (amountDouble != null && category.isNotBlank()) {
+
+                if (amountDouble != null && note.isNotBlank()) {
                     val dateToSave = Date(selectedDateMillis)
+
                     if (isEditing) {
-                        viewModel.updateExpense(expenseToEdit!!.id, amountDouble, category, note, transactionType, dateToSave)
+                        // Editing keeps manual category
+                        viewModel.updateExpense(
+                            expenseToEdit!!.id,
+                            amountDouble,
+                            expenseToEdit!!.category,
+                            note,
+                            transactionType,
+                            dateToSave
+                        )
                     } else {
-                        viewModel.addExpense(amountDouble, category, note, transactionType, dateToSave)
+                        // 🔥 AI call here
+                        viewModel.addExpenseWithAI(
+                            amount = amountDouble,
+                            note = note,
+                            type = transactionType,
+                            timestamp = dateToSave
+                        )
                     }
                 }
             },
-            modifier = Modifier.fillMaxWidth().height(56.dp), shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = themePrimary, contentColor = Color.Black)
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp),
+            shape = RoundedCornerShape(16.dp)
         ) {
-            Text(if (isEditing) "Update Transaction" else "Save Transaction", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Text(
+                text = if (isEditing) "Update Transaction" else "Save",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold
+            )
         }
     }
 }
 
+// ---------------- TOGGLE ----------------
 @Composable
-fun ToggleButton(text: String, isSelected: Boolean, selectedColor: Color, modifier: Modifier = Modifier, onClick: () -> Unit) {
+fun ToggleButton(
+    text: String,
+    isSelected: Boolean,
+    selectedColor: Color,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
     Box(
-        modifier = modifier.fillMaxHeight().clip(RoundedCornerShape(25.dp))
+        modifier = modifier
+            .fillMaxHeight()
+            .clip(RoundedCornerShape(25.dp))
             .background(if (isSelected) selectedColor else Color.Transparent)
             .clickable { onClick() },
         contentAlignment = Alignment.Center
     ) {
-        Text(text = text, color = if (isSelected) Color.Black else Color.Gray, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium, fontSize = 16.sp)
+        Text(
+            text = text,
+            color = if (isSelected) Color.Black else Color.Gray,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+        )
     }
 }
